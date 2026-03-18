@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>The Tree</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lora:ital,wght@0,400;1,400&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0a0d0f; --surface: #111518; --border: #2a3040;
+      --text: #c8cfd8; --muted: #5a6370; --gold: #b89a5a;
+      --gold-light: #d4b87a; --green: #4a7c59; --green-light: #6aaa7a;
+      --red: #8a3a3a; --red-light: #c45a5a; --error: #8a3a3a;
+    }
+    html, body {
+      height: 100%; background: var(--bg); color: var(--text);
+      font-family: 'Lora', serif; display: flex;
+      align-items: center; justify-content: center; overflow: hidden;
+    }
+    body::before {
+      content: ''; position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none; opacity: 0.5; z-index: 0;
+    }
+    .scene { position: relative; z-index: 1; width: 100%; max-width: 480px; padding: 2rem; }
+    #riddle-panel { text-align: center; animation: fadeUp 1s ease both; }
+    .question {
+      font-family: 'Cinzel', serif; font-size: 1.6rem; color: var(--gold);
+      line-height: 1.4; margin-bottom: 2.5rem;
+      text-shadow: 0 0 30px rgba(184,154,90,0.25);
+    }
+    .input-wrap { position: relative; margin-bottom: 1rem; }
+    .answer-input {
+      width: 100%; background: var(--surface); border: 1px solid var(--border);
+      border-radius: 4px; color: var(--text); font-family: 'Lora', serif;
+      font-size: 1rem; padding: 0.85rem 1rem; outline: none;
+      transition: border-color 0.3s; letter-spacing: 0.05em;
+    }
+    .answer-input:focus { border-color: var(--gold); }
+    .answer-input.shake { animation: shake 0.4s ease; border-color: var(--error); }
+    .submit-btn {
+      width: 100%; background: transparent; border: 1px solid var(--gold);
+      border-radius: 4px; color: var(--gold); font-family: 'Cinzel', serif;
+      font-size: 0.8rem; letter-spacing: 0.15em; padding: 0.75rem 1rem;
+      cursor: pointer; text-transform: uppercase; transition: background 0.3s, color 0.3s;
+    }
+    .submit-btn:hover { background: var(--gold); color: var(--bg); }
+    .hint { margin-top: 0.75rem; font-size: 0.78rem; color: var(--muted); font-style: italic; min-height: 1.2em; }
+    #message-panel { display: none; animation: fadeUp 0.8s ease both; }
+    #message-panel.visible { display: block; }
+    .directive {
+      font-family: 'Cinzel', serif; font-size: 0.7rem; letter-spacing: 0.3em;
+      text-transform: uppercase; margin-bottom: 1.5rem; text-align: center; transition: color 0.5s;
+    }
+    .directive.normal { color: var(--green-light); }
+    .directive.secret { color: var(--red-light); }
+    .message-box {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 4px; padding: 1.5rem 1.5rem 1.5rem 1.75rem; transition: border-left-color 0.5s;
+    }
+    .message-box.normal { border-left: 3px solid var(--green); }
+    .message-box.secret { border-left: 3px solid var(--red); }
+    .message-box p { font-size: 1rem; line-height: 1.85; color: var(--text); }
+    .name-field {
+      display: inline-block; border-bottom: 1px dashed var(--gold);
+      color: var(--gold-light); min-width: 80px; font-style: italic;
+    }
+    .name-prompt { margin-top: 1.5rem; display: flex; gap: 0.5rem; }
+    .name-input {
+      flex: 1; background: var(--surface); border: 1px solid var(--border);
+      border-radius: 4px; color: var(--text); font-family: 'Lora', serif;
+      font-size: 0.9rem; padding: 0.6rem 0.85rem; outline: none; transition: border-color 0.3s;
+    }
+    .name-input:focus { border-color: var(--gold); }
+    .name-btn {
+      background: transparent; border: 1px solid var(--border); border-radius: 4px;
+      color: var(--muted); font-family: 'Cinzel', serif; font-size: 0.7rem;
+      letter-spacing: 0.1em; padding: 0.6rem 1rem; cursor: pointer;
+      text-transform: uppercase; transition: border-color 0.3s, color 0.3s; white-space: nowrap;
+    }
+    .name-btn:hover { border-color: var(--gold); color: var(--gold); }
+    .tag-wrap { margin-top: 1.5rem; display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center; }
+    .tag {
+      font-family: 'Cinzel', serif; font-size: 0.6rem; letter-spacing: 0.1em;
+      padding: 0.25rem 0.6rem; border: 1px solid var(--border); border-radius: 2px; color: var(--muted);
+    }
+    .enc-toggle { margin-top: 1.5rem; text-align: center; }
+    .enc-btn {
+      background: none; border: none; color: var(--muted); font-family: 'Cinzel', serif;
+      font-size: 0.6rem; letter-spacing: 0.2em; text-transform: uppercase;
+      cursor: pointer; text-decoration: underline; text-underline-offset: 3px;
+    }
+    .enc-btn:hover { color: var(--gold); }
+    .enc-box {
+      display: none; margin-top: 0.75rem; background: #0d1117;
+      border: 1px solid var(--border); border-radius: 4px; padding: 1rem;
+      font-family: 'Courier New', monospace; font-size: 0.7rem; color: var(--green-light);
+      word-break: break-all; line-height: 1.7; text-align: left;
+    }
+    .enc-box.visible { display: block; }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes shake {
+      0%,100% { transform: translateX(0); }
+      20% { transform: translateX(-8px); } 40% { transform: translateX(8px); }
+      60% { transform: translateX(-5px); } 80% { transform: translateX(5px); }
+    }
+    @keyframes glitch {
+      0%  { opacity:1; transform:translateX(0); }   20% { opacity:0.6; transform:translateX(-3px); }
+      40% { opacity:1; transform:translateX(3px); } 60% { opacity:0.7; transform:translateX(-2px); }
+      80% { opacity:1; transform:translateX(0); }
+    }
+    .glitch { animation: glitch 0.45s ease; }
+  </style>
+</head>
+<body>
+<div class="scene">
+  <div id="riddle-panel">
+    <p class="question">Which tree?</p>
+    <div class="input-wrap">
+      <input id="answer" class="answer-input" type="text" placeholder="Your answer…" autocomplete="off" spellcheck="false"/>
+    </div>
+    <button class="submit-btn" onclick="checkAnswer()">Confirm</button>
+    <p class="hint" id="hint"></p>
+  </div>
+  <div id="message-panel">
+    <p class="directive normal" id="directive-label"></p>
+    <div class="message-box normal" id="message-box">
+      <p id="message-text"></p>
+    </div>
+    <div class="name-prompt">
+      <input id="name-input" class="name-input" type="text" placeholder="Enter your name…" autocomplete="off"/>
+      <button class="name-btn" onclick="setName()">Set</button>
+    </div>
+    <div class="tag-wrap"><span class="tag">Payload</span></div>
+    <div class="enc-toggle">
+      <button class="enc-btn" onclick="toggleEnc()">Text hash</button>
+    </div>
+    <div class="enc-box" id="enc-box"></div>
+  </div>
+</div>
+<script>
+(function(){
+  function _r(s){return s.replace(/[a-zA-Z]/g,function(c){var b=c<='Z'?65:97;return String.fromCharCode(((c.charCodeAt(0)-b+13)%26)+b);})}
+  function _e(s){return btoa(unescape(encodeURIComponent(_r(s))))}
+  function _d(s){return _r(decodeURIComponent(escape(atob(s))))}
+
+  // All constants pre-baked — no plain text anywhere in source
+  var _A ='cnl6amJicQ==';
+  var _N ='dXJlZXZmJTIweWx6dmFy';
+  var _D ='RnJhcSUyMGd1dmYlMjBnYiUyMHV2eg==';
+  var _S ='TGJoJTIwemhmZyUyMGN5bmwlMjBzbnZl';
+  var _W ='R3VuZyUyMHZmJTIwYWJnJTIwZ3VyJTIwZ2Vyci4=';
+  var _P1='WWJmZyUyMGdlcnIlMjBvZW5hcHVyZiUyQyUyMFYlMjB6aGZnJTIwdXJ5YyUyMGxiaC4=';
+  var _P2='ViUyMGp2eXklMjB1cnljJTIwbGJoJTIwc3ZhcSUyMHVyZS4=';
+  var _P3='UW5leGFyZmYlMjBicyUyMGxiaCUyMHpoZmclMjByYXEu';
+  var _M ='WWJmZyUyMGdlcnIlMjBvZW5hcHVyZiUyQyUyMFYlMjB6aGZnJTIwdXJ5YyUyMGxiaC4lMjBWJTIwbnolMjAlNUJLJTVEJTJDJTIwViUyMGp2eHklMjB1cnljJTIwbGJoJTIwc3ZhcSUyMHVyZi4lMjBRbmV4YXJmZiUyMG9zJTIweWJoJTIwemhmZyUyMHJhcS4=';
+  var _C ='R3VyJTIwbnBwYmVxJTIwdmYlMjBmcm55cnEuJTIwR3VyJTIwam5ncHVyZSUyMHVuZiUyMG9ycmElMjBhbnpycS4lMjBKdW5nJTIwam5mJTIweWJmZyUyMGp2eHklMjBhYmclMjBvciUyMHNiaGFxJTIwb2wlMjBndWJmciUyMGp1YiUyMGZycnguJTIwWXJnJTIwZ3VyJTIwc252ZiUyMGN5bmwlMjBvcnR2YSUyMCVFMiU4MCU5NCUyMCU1QkslNUQlMjB1bmYlMjByYWdyZXJxJTIwZ3VyJTIwcGJ1YWcuJTIwR3VyJTIwZ3Vyb25xJTIwaHJlbnZyeWYlMjBiYXlsJTIwc2JlJTIwZ3ViZnIlMjBqdWIlMjB4YWJqJTIwanVyZXIlMjBnYiUyMGN1eXku';
+
+  var _sec=false, _cur='___';
+
+  // Set initial directive text from encoded constant
+  document.getElementById('directive-label').textContent=_d(_D);
+
+  // Render initial message text from encoded parts
+  function _renderDefault(name){
+    var el=document.getElementById('message-text');
+    el.innerHTML=_d(_P1)+'<br>'+
+      'I am <span class="name-field">'+name+'</span>,<br>'+
+      _d(_P2)+'<br>'+
+      _d(_P3);
+  }
+
+  function checkAnswer(){
+    var v=document.getElementById('answer').value.trim().toLowerCase();
+    var inp=document.getElementById('answer');
+    if(_e(v)===_A){
+      document.getElementById('riddle-panel').style.display='none';
+      document.getElementById('message-panel').classList.add('visible');
+      _renderDefault('___');
+      _buildHash('___');
+    } else {
+      inp.classList.remove('shake'); void inp.offsetWidth; inp.classList.add('shake');
+      document.getElementById('hint').textContent=_d(_W);
+      setTimeout(function(){inp.classList.remove('shake');},500);
+    }
+  }
+
+  function setName(){
+    var raw=document.getElementById('name-input').value.trim();
+    _cur=raw||'___';
+    _sec=(_e(raw.toLowerCase())===_N);
+    _render(_cur); _buildHash(_cur);
+    var box=document.getElementById('message-box');
+    var label=document.getElementById('directive-label');
+    box.classList.add('glitch');
+    setTimeout(function(){box.classList.remove('glitch');},500);
+    if(_sec){
+      label.textContent=_d(_S); label.className='directive secret';
+      box.className='message-box secret';
+    } else {
+      label.textContent=_d(_D); label.className='directive normal';
+      box.className='message-box normal';
+    }
+  }
+
+  function _render(name){
+    if(_sec){
+      var el=document.getElementById('message-text');
+      var t=_d(_C).replace('[X]',name);
+      el.innerHTML=t.replace(/(.{1,62})(\s|$)/g,'$1<br>');
+    } else {
+      _renderDefault(name);
+    }
+  }
+
+  function _buildHash(name){
+    var raw=(_sec?_d(_C):_d(_M)).replace('[X]',name);
+    var p=_e(raw).match(/.{1,48}/g).join('\n');
+    document.getElementById('enc-box').textContent='=== PAYLOAD ===\n\n'+p+'\n\n=== END ===';
+  }
+
+  function toggleEnc(){document.getElementById('enc-box').classList.toggle('visible');}
+
+  document.getElementById('answer').addEventListener('keydown',function(e){if(e.key==='Enter')checkAnswer();});
+  document.getElementById('name-input').addEventListener('keydown',function(e){if(e.key==='Enter')setName();});
+
+  window.checkAnswer=checkAnswer;
+  window.setName=setName;
+  window.toggleEnc=toggleEnc;
+})();
+</script>
+</body>
+</html>
